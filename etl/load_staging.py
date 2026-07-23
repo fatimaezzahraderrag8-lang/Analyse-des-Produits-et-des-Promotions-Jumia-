@@ -7,69 +7,82 @@ from sqlalchemy import create_engine, text
 # Charger les variables d'environnement
 load_dotenv()
 
-user = os.getenv("DB_USER")
-password = os.getenv("DB_PASSWORD")
-host = os.getenv("DB_HOST")
-port = os.getenv("DB_PORT")
-db = os.getenv("DB_NAME")
 
-# Charger le fichier CSV
-df = pd.read_csv(r"C:\data pipeline et bi fil rouge\data\raw\jumia_products.csv")
+def load_staging(df):
+    """
+    Crée la base de données si elle n'existe pas,
+    crée le schéma staging et charge les données.
+    """
 
-try:
-    # Connexion à PostgreSQL (base postgres)
-    conn = psycopg2.connect(
-        host=host,
-        port=port,
-        user=user,
-        password=password,
-        dbname="postgres"
-    )
+    user = os.getenv("DB_USER")
+    password = os.getenv("DB_PASSWORD")
+    host = os.getenv("DB_HOST")
+    port = os.getenv("DB_PORT")
+    db = os.getenv("DB_NAME")
 
-    conn.autocommit = True
-    cursor = conn.cursor()
+    try:
+        # Connexion à la base postgres
+        conn = psycopg2.connect(
+            host=host,
+            port=port,
+            user=user,
+            password=password,
+            dbname="postgres"
+        )
 
-    # Vérifier si la base existe
-    cursor.execute(
-        "SELECT 1 FROM pg_database WHERE datname = %s;",
-        (db,)
-    )
+        conn.autocommit = True
+        cursor = conn.cursor()
 
-    if cursor.fetchone() is None:
-        cursor.execute(f'CREATE DATABASE "{db}"')
-        print(f"Base de données '{db}' créée.")
-    else:
-        print(f"Base de données '{db}' existe déjà.")
+        # Vérifier si la base existe
+        cursor.execute(
+            "SELECT 1 FROM pg_database WHERE datname = %s;",
+            (db,)
+        )
 
-    cursor.close()
-    conn.close()
+        if cursor.fetchone() is None:
+            cursor.execute(f'CREATE DATABASE "{db}"')
+            print(f"Base de données '{db}' créée.")
+        else:
+            print(f"Base de données '{db}' existe déjà.")
 
-    # Connexion à la nouvelle base
-    DATABASE_URL = (
-        f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{db}"
-    )
+        cursor.close()
+        conn.close()
 
-    engine = create_engine(DATABASE_URL)
+        # Connexion à la base du projet
+        DATABASE_URL = (
+            f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{db}"
+        )
 
-    print("Connexion OK")
+        engine = create_engine(DATABASE_URL)
 
-    # Création du schéma staging
-    with engine.connect() as conn:
-        conn.execute(text("CREATE SCHEMA IF NOT EXISTS staging"))
-        conn.commit()
+        print("Connexion PostgreSQL OK")
 
-    print("Schéma staging prêt")
+        # Création du schéma staging
+        with engine.begin() as conn:
+            conn.execute(text("CREATE SCHEMA IF NOT EXISTS staging"))
 
-    # Chargement des données
-    df.to_sql(
-        name="products_raw",
-        con=engine,
-        schema="staging",
-        if_exists="replace",   # replace la première fois si tu veux recréer la table
-        index=False
-    )
+        print("Schéma staging prêt")
 
-    print("Données chargées")
+        # Chargement des données
+        df.to_sql(
+            name="products_raw",
+            schema="staging",
+            con=engine,
+            if_exists="replace",
+            index=False
+        )
 
-except Exception as e:
-    print(" Erreur :", e)
+        print("Données chargées dans staging.products_raw")
+
+    except Exception as e:
+        print("Erreur :", e)
+        raise
+
+
+if __name__ == "__main__":
+
+    file_path = r"C:\data pipeline et bi fil rouge\data\raw\jumia_products.csv"
+
+    df = pd.read_csv(file_path)
+
+    load_staging(df)
