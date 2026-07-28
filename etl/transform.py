@@ -3,7 +3,7 @@ import pandas as pd
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
 # Import des fonctions de Feature Engineering
-from utils.fonction_feauture_engineering import (
+from utils.fonction_feature_engineering import (
     price_category,
     popularity,
     seller_level

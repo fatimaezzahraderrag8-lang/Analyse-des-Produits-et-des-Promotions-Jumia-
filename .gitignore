@@ -1,2 +1,15 @@
+__pycache__/
+*.pyc
+venv/
 .env
-venv
+
+logs/
+postgres_data/
+
+.vscode/
+.idea/
+
+*.parquet
+*.db
+
+.env.local

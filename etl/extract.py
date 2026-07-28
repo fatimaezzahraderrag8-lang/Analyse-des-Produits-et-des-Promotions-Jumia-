@@ -1,14 +1,19 @@
+import os
 import pandas as pd
+
 def extract_data(file_path):
-    """
-    Extraction des données depuis le fichier CSV.
-    """
+
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(file_path)
+
     df = pd.read_csv(file_path)
-    print("Extraction des données terminée avec succès.")
-    print(f"Nombre de lignes : {len(df)}")
-    print(f"Nombre de colonnes : {len(df.columns)}")
-    return df
-if __name__ == "__main__":
-    file_path = "data/raw/jumia_products.csv"
-    df = extract_data(file_path)
+
     print(df.head())
+
+    print(f"Nombre de lignes : {len(df)}")
+
+    return file_path
+
+if __name__ == "__main__":
+
+    extract_data("/opt/airflow/data/raw/jumia_products.csv")
